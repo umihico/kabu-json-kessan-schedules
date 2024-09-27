@@ -18,7 +18,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Pip install
-        run: pip install -r requirements.txt
+        run: pip install --break-system-packages -r requirements.txt
       - name: Fetch schedules
         run: python fetch_schedules.py
       - name: Configure AWS Credentials for GitHub Actions
