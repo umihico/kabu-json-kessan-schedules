@@ -68,18 +68,18 @@ for i in range(1, 13):
 
 
 kessan_month_patterns = {
-    '1月期': [4, 7, 10, 1],
-    '2月期': [5, 8, 11, 2],
-    '3月期': [6, 9, 12, 3],
-    '4月期': [7, 10, 1, 4],
-    '5月期': [8, 11, 2, 5],
-    '6月期': [9, 12, 3, 6],
-    '7月期': [10, 1, 4, 7],
-    '8月期': [11, 2, 5, 8],
-    '9月期': [12, 3, 6, 9],
-    '10月期': [1, 4, 7, 10],
-    '11月期': [2, 5, 8, 11],
-    '12月期': [3, 6, 9, 12]
+    '1': [4, 7, 10, 1],
+    '2': [5, 8, 11, 2],
+    '3': [6, 9, 12, 3],
+    '4': [7, 10, 1, 4],
+    '5': [8, 11, 2, 5],
+    '6': [9, 12, 3, 6],
+    '7': [10, 1, 4, 7],
+    '8': [11, 2, 5, 8],
+    '9': [12, 3, 6, 9],
+    '10': [1, 4, 7, 10],
+    '11': [2, 5, 8, 11],
+    '12': [3, 6, 9, 12]
 }
 
 final_data = []
@@ -101,7 +101,7 @@ for i, data in enumerate(raw_data):
             date_str = date_str.replace("中旬", "15")
         elif "下旬" in date_str:
             date_str = date_str.replace("下旬", "28")
-        pattern = kessan_month_patterns[data["決算期"]]
+        pattern = kessan_month_patterns[data["決算期"].replace("月期", "")]
         month = {
             "第１": 0,
             "第２": 1,
@@ -124,6 +124,7 @@ for i, data in enumerate(raw_data):
             "決算月配列": pattern,
             "決算月": month,
             "発表日数差": delta.days,
+            "決算発表月配列": kessan_month_patterns[str(release_date.month)],
             "決算日": kessan_date.strftime("%Y/%m/%d"),
         })
     except Exception as e:
