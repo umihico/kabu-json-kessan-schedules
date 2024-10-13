@@ -2,13 +2,14 @@ import re
 import requests
 from lxml import html
 import datetime
+from dateutil.relativedelta import relativedelta
 import json
 
 # import requests_cache
 # session = requests_cache.CachedSession('cache', expire_after=9999999)
 session = requests.Session()
 
-final_data = []
+raw_data = []
 for i in range(1, 13):
     month = f"{i:02d}"
     for page_index in range(1, 100):
@@ -48,11 +49,11 @@ for i in range(1, 13):
                     "会社名": cols[2],
                     # "関連情報": cols[3], # 常に'適時開示'の文字列しかないので、無視
                     "決算期": cols[4],
-                    "決算種別": cols[5],
+                    "決算種別": cols[5].replace("\xa0", ""),
                     "業種": cols[6],
                     "上場市場": cols[7],
                 }
-                final_data.append(json_data)
+                raw_data.append(json_data)
                 # print(json_data)
             if first_page_only:
                 break
@@ -65,7 +66,70 @@ for i in range(1, 13):
             print(url)
             raise e
 
-print(f"件数: {len(final_data)}")
+
+kessan_month_patterns = {
+    '1月期': [4, 7, 10, 1],
+    '2月期': [5, 8, 11, 2],
+    '3月期': [6, 9, 12, 3],
+    '4月期': [7, 10, 1, 4],
+    '5月期': [8, 11, 2, 5],
+    '6月期': [9, 12, 3, 6],
+    '7月期': [10, 1, 4, 7],
+    '8月期': [11, 2, 5, 8],
+    '9月期': [12, 3, 6, 9],
+    '10月期': [1, 4, 7, 10],
+    '11月期': [2, 5, 8, 11],
+    '12月期': [3, 6, 9, 12]
+}
+
+final_data = []
+for i, data in enumerate(raw_data):
+    try:
+        date_str = data["決算発表日"]
+        if date_str in ["--", "---"]:
+            final_data.append({
+                **data,
+                "決算月配列": None,
+                "決算月": None,
+                "発表日数差": None,
+                "決算日": None,
+            })
+            continue
+        if "上旬" in date_str:
+            date_str = date_str.replace("上旬", "01")
+        elif "中旬" in date_str:
+            date_str = date_str.replace("中旬", "15")
+        elif "下旬" in date_str:
+            date_str = date_str.replace("下旬", "28")
+        pattern = kessan_month_patterns[data["決算期"]]
+        month = {
+            "第１": 0,
+            "第２": 1,
+            "第３": 2,
+            "第４": 3,
+            "本": 3,
+        }[data["決算種別"]]
+
+        release_date = datetime.datetime.strptime(date_str, "%Y/%m/%d")
+        kessan_date = [d for d in
+                       [
+                           datetime.datetime(release_date.year,
+                                             pattern[month], 1),
+                           datetime.datetime(release_date.year - 1, pattern[month], 1)]
+                       if d < release_date
+                       ][0] + relativedelta(months=1) - datetime.timedelta(days=1)
+        delta = release_date - kessan_date
+        final_data.append({
+            **data,
+            "決算月配列": pattern,
+            "決算月": month,
+            "発表日数差": delta.days,
+            "決算日": kessan_date.strftime("%Y/%m/%d"),
+        })
+    except Exception as e:
+        print("index: ", i)
+        print("data:", data)
+        raise e
 
 
 def sort_func(x):
