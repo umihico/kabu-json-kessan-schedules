@@ -1,6 +1,7 @@
 import re
 import requests
 from lxml import html
+import datetime
 import json
 
 # import requests_cache
@@ -65,6 +66,30 @@ for i in range(1, 13):
             raise e
 
 print(f"件数: {len(final_data)}")
+
+
+def sort_func(x):
+    # "2024/10/2", "2024/10/20", "---", "2024/10/上旬"等
+    date_str = x["決算発表日"]
+    if "上旬" in date_str:
+        date_str = date_str.replace("上旬", "01")
+    elif "中旬" in date_str:
+        date_str = date_str.replace("中旬", "15")
+    elif "下旬" in date_str:
+        date_str = date_str.replace("下旬", "28")
+    today = datetime.datetime.now()
+    try:
+        parsed = datetime.datetime.strptime(date_str, "%Y/%m/%d") if date_str not in ["--", "---"] else datetime.datetime.strptime(
+            "9999/12/31", "%Y/%m/%d")
+    except ValueError:
+        print(x)
+        raise Exception(f"Unexpected date string: {date_str}")
+    if parsed < today:
+        parsed = datetime.datetime.strptime("9999/12/31", "%Y/%m/%d")
+    return parsed
+
+
+final_data = sorted(final_data, key=sort_func)
 
 if len(final_data) < 4000:
     raise Exception("件数が少なすぎる")
