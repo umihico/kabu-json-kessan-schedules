@@ -91,6 +91,7 @@ for i, data in enumerate(raw_data):
                 **data,
                 "決算月配列": None,
                 "決算月": None,
+                "決算発表月配列": None,
                 "発表日数差": None,
                 "決算日": None,
             })
